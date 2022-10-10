@@ -10,20 +10,8 @@ import matplotlib.pyplot as plt
 import matplotlib.pyplot as plt
 import time
 import csv
-
-ARFF_FILE = "./artificial/2d-10c.arff"
-ARFF_FILE = "./artificial/xor.arff"
-ARFF_FILE = "./artificial/2d-4c.arff"
-
-SILHOUETTE = silhouette_score
-DAVIES = lambda x,y : -davies_bouldin_score(x,y)
-CALINSKI = calinski_harabasz_score
-
-databrut = arff.loadarff(open(ARFF_FILE, 'r'))
-data = [[x[0], x[1]] for x in databrut[0]]
-f0 = [f[0] for f in data]
-f1 = [f[1] for f in data]
-labels = [x[2] for x in databrut[0]]
+import numpy as np
+import hdbscan
 
 DataType = list[int, int]
 
@@ -51,7 +39,7 @@ def find_cluster(
         execution_time = time.time() - initial_time
         return best_labels, best_score, best_n_clusters, execution_time, best_params
 
-    if mode == "agglomeration":
+    if mode == "discrete":
         for p in params:
             labels, n_clusters = cluster_method(data, p)
             score = score_method(data, labels)
@@ -74,13 +62,31 @@ def find_kmedoids(data, n_clusters):
     return fp.labels
 
 def find_agglomerative(data, params):
-    model = cluster. AgglomerativeClustering(
+    model = cluster.AgglomerativeClustering(
         distance_threshold = params[1],
         linkage = params[0],
         n_clusters = None
     )
     model = model.fit(data)
     return model.labels_, model.n_clusters_
+
+def find_dbscan(data, params):
+    model = cluster.DBSCAN(
+        eps=params[0],
+        min_samples=params[1]
+    )
+    model = model.fit(data)
+    n_clusters = len(np.unique(labels))
+    return model.labels_, n_clusters
+
+def find_hdbscan(data, params):
+    model = hdbscan.HDBSCAN(
+        min_cluster_size=params[0],
+        min_samples=params[1]
+    )
+    model = model.fit(data)
+    n_clusters = len(np.unique(labels))
+    return model.labels_, n_clusters
 
 CLUSTER_METHODS = {
     "kmeans" : {
@@ -95,26 +101,48 @@ CLUSTER_METHODS = {
     },
     "agglomerative": {
         "method": find_agglomerative,
-        "mode": "agglomeration",
+        "mode": "discrete",
         "params" : [[linkage, distance] for linkage in ["single", "ward", "complete", "average"] for distance in [5, 10, 20]]
+    },
+    "dbscan": {
+        "method": find_dbscan,
+        "mode": "discrete",
+        "params" : [[eps, min_samples] for eps in [2, 5, 10] for min_samples in [2, 4, 6]]
+    },
+    "hdbscan": {
+        "method": find_hdbscan,
+        "mode": "discrete",
+        "params" : [[eps, min_samples] for eps in [2, 5, 10] for min_samples in [2, 4, 6]]
     },
 }
 
 SCORE_METHODS = [
-    ("SILHOUETTE", SILHOUETTE),
-    ("DAVIES", DAVIES),
-    ("CALINSKI", CALINSKI),
+    ("SILHOUETTE", silhouette_score),
+    ("DAVIES", lambda x,y : -davies_bouldin_score(x,y)),
+    ("CALINSKI", calinski_harabasz_score),
 ]
 
+FILES = [
+    "./artificial/2d-4c.arff",
+    "./artificial/2d-10c.arff",
+]
 
 with open("./results.csv", 'w') as out:
     csv_out = csv.writer(out)
     csv_out.writerow(("method", "score_method", "score", "ideal n clusters", "execution time", "best params"))
-    for cluster_method_name, cluster_method in CLUSTER_METHODS.items():
-        for score_method_name, score_method in SCORE_METHODS:
-            print("running " + str(cluster_method_name) + " with score " + str(score_method_name) + " with params " + str(cluster_method["params"]))
-            labels, score, n_cluster, execution_time, best_params = find_cluster(data, cluster_method["method"], score_method, cluster_method["mode"], cluster_method["params"])
-            csv_out.writerow((cluster_method_name, score_method_name, score, n_cluster, execution_time, best_params))
+    for f in FILES:
+        print("running for file " + f)
+        databrut = arff.loadarff(open(f, 'r'))
+        data = [[x[0], x[1]] for x in databrut[0]]
+        f0 = [f[0] for f in data]
+        f1 = [f[1] for f in data]
+        labels = [x[2] for x in databrut[0]]
+
+        for cluster_method_name, cluster_method in CLUSTER_METHODS.items():
+            for score_method_name, score_method in SCORE_METHODS:
+                print("running " + str(cluster_method_name) + " with score " + str(score_method_name) + " with params " + str(cluster_method["params"]))
+                labels, score, n_cluster, execution_time, best_params = find_cluster(data, cluster_method["method"], score_method, cluster_method["mode"], cluster_method["params"])
+                csv_out.writerow((cluster_method_name, score_method_name, score, n_cluster, execution_time, best_params))
 
 # plt.scatter(f0, f1, c=labels, s=3)
 # plt.show()
