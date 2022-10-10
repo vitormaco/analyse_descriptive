@@ -1,5 +1,4 @@
 from typing import Callable
-from grpc import Call
 from scipy.io import arff
 from sklearn import cluster
 from sklearn.metrics.pairwise import euclidean_distances, manhattan_distances
@@ -12,6 +11,7 @@ import time
 import csv
 import numpy as np
 import hdbscan
+from sklearn.neighbors import NearestNeighbors
 
 DataType = list[int, int]
 
@@ -127,6 +127,20 @@ FILES = [
     "./artificial/2d-10c.arff",
 ]
 
+def find_nearest_neighbors(data):
+    # Distances k plus proches voisins
+    # Donnees dans X
+    k = 5
+    neigh = NearestNeighbors(n_neighbors = k)
+    neigh.fit(data)
+    distances,indices = neigh.kneighbors(data)
+    # retirer le point " origine "
+    newDistances = np.asarray([np.average(distances[i][1:]) for i in range (0, distances.shape[0])])
+    trie = np.sort(newDistances)
+    plt.title(" Plus proches voisins (5) ")
+    plt.plot(trie)
+    plt.show()
+
 with open("./results.csv", 'w') as out:
     csv_out = csv.writer(out)
     csv_out.writerow(("method", "score_method", "score", "ideal n clusters", "execution time", "best params"))
@@ -137,12 +151,12 @@ with open("./results.csv", 'w') as out:
         f0 = [f[0] for f in data]
         f1 = [f[1] for f in data]
         labels = [x[2] for x in databrut[0]]
-
-        for cluster_method_name, cluster_method in CLUSTER_METHODS.items():
-            for score_method_name, score_method in SCORE_METHODS:
-                print("running " + str(cluster_method_name) + " with score " + str(score_method_name) + " with params " + str(cluster_method["params"]))
-                labels, score, n_cluster, execution_time, best_params = find_cluster(data, cluster_method["method"], score_method, cluster_method["mode"], cluster_method["params"])
-                csv_out.writerow((cluster_method_name, score_method_name, score, n_cluster, execution_time, best_params))
+        find_nearest_neighbors(data)
+        # for cluster_method_name, cluster_method in CLUSTER_METHODS.items():
+        #     for score_method_name, score_method in SCORE_METHODS:
+        #         print("running " + str(cluster_method_name) + " with score " + str(score_method_name) + " with params " + str(cluster_method["params"]))
+        #         labels, score, n_cluster, execution_time, best_params = find_cluster(data, cluster_method["method"], score_method, cluster_method["mode"], cluster_method["params"])
+        #         csv_out.writerow((cluster_method_name, score_method_name, score, n_cluster, execution_time, best_params))
 
 # plt.scatter(f0, f1, c=labels, s=3)
 # plt.show()
