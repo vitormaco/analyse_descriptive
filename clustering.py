@@ -1,4 +1,3 @@
-from typing import Callable
 from scipy.io import arff
 from sklearn import cluster
 from sklearn.metrics.pairwise import euclidean_distances, manhattan_distances
@@ -13,12 +12,10 @@ import numpy as np
 import hdbscan
 from sklearn.neighbors import NearestNeighbors
 
-DataType = list[int, int]
-
 def find_cluster(
-    data: DataType,
+    data,
     cluster_method,
-    score_method: Callable[[DataType, int], int],
+    score_method,
     mode,
     params,
 ):
@@ -57,6 +54,7 @@ def find_kmeans(data, n_clusters):
     return model.labels_
 
 def find_kmedoids(data, n_clusters):
+    # distmatrix = euclidean_distances(data)
     distmatrix = manhattan_distances(data)
     fp = kmedoids.fasterpam(distmatrix, n_clusters)
     return fp.labels
@@ -151,12 +149,12 @@ with open("./results.csv", 'w') as out:
         f0 = [f[0] for f in data]
         f1 = [f[1] for f in data]
         labels = [x[2] for x in databrut[0]]
-        find_nearest_neighbors(data)
-        # for cluster_method_name, cluster_method in CLUSTER_METHODS.items():
-        #     for score_method_name, score_method in SCORE_METHODS:
-        #         print("running " + str(cluster_method_name) + " with score " + str(score_method_name) + " with params " + str(cluster_method["params"]))
-        #         labels, score, n_cluster, execution_time, best_params = find_cluster(data, cluster_method["method"], score_method, cluster_method["mode"], cluster_method["params"])
-        #         csv_out.writerow((cluster_method_name, score_method_name, score, n_cluster, execution_time, best_params))
+        # find_nearest_neighbors(data)
+        for cluster_method_name, cluster_method in CLUSTER_METHODS.items():
+            for score_method_name, score_method in SCORE_METHODS:
+                print("running " + str(cluster_method_name) + " with score " + str(score_method_name) + " with params " + str(cluster_method["params"]))
+                labels, score, n_cluster, execution_time, best_params = find_cluster(data, cluster_method["method"], score_method, cluster_method["mode"], cluster_method["params"])
+                csv_out.writerow((cluster_method_name, score_method_name, score, n_cluster, execution_time, best_params))
 
-# plt.scatter(f0, f1, c=labels, s=3)
-# plt.show()
+                plt.scatter(f0, f1, c=labels, s=3)
+                plt.show()
