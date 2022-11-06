@@ -58,11 +58,10 @@ if __name__ == '__main__':
             f0 = [f[0] for f in data]
             f1 = [f[1] for f in data]
             real_labels = [x[2] for x in raw_data[0]]
-            varying_distances = [2**x for x in range(-3,5)]
+            corners_dist = ((max(f0)-min(f0))**2 + (max(f1)-min(f1))**2)**0.5
+            varying_distances = [corners_dist*(2**x) for x in range(-8,0)]
             varying_linkages = ['ward', 'complete', 'average', 'single']
             varying_n_clusters = list(range(2,round(len(data)**0.5)))
-            labels, score, best_distance, best_linkage, n_cluster, execution_time = find_best_n_clusters(data, [5], ['single'], [None])
-            csv_out.writerow((file.split("/")[-1], "agglomerative", score, best_distance, best_linkage, n_cluster, execution_time, "None"))
             labels, score, best_distance, best_linkage, n_cluster, execution_time = find_best_n_clusters(data, varying_distances, ['single'], [None])
             csv_out.writerow((file.split("/")[-1], "agglomerative varying distance", score, best_distance, best_linkage, n_cluster, execution_time, varying_distances))
             labels, score, best_distance, best_linkage, n_cluster, execution_time = find_best_n_clusters(data, [best_distance], varying_linkages, [None])

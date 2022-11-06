@@ -108,5 +108,5 @@ if __name__ == '__main__':
             csv_out.writerow((file.split("/")[-1], "dbscan varying eps and min samples", score, best_eps, best_min_samples, n_cluster, execution_time, varying_eps, varying_min_samples))
             labels, score, best_eps, best_min_samples, n_cluster, execution_time = calculate_hdbscan(data, varying_eps, varying_min_samples)
             csv_out.writerow((file.split("/")[-1], "hdbscan varying min samples", score, best_eps, best_min_samples, n_cluster, execution_time, '-', varying_min_samples))
-            plt.scatter(f0, f1, c=labels, s=3)
-            plt.show()
+            # plt.scatter(f0, f1, c=labels, s=3)
+            # plt.show()
