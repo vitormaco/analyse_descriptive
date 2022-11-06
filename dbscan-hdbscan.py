@@ -44,35 +44,27 @@ def calculate_dbscan(data, eps, min_samples):
     execution_time = time.time() - initial_time
     return best_labels, best_score, best_eps, best_min_samples, best_n_clusters, execution_time
 
-def find_hdbscan(data, min_samples):
-    model = hdbscan.HDBSCAN(
-        min_samples=min_samples
-    )
+def find_hdbscan(data):
+    model = hdbscan.HDBSCAN(gen_min_span_tree=True)
     model = model.fit(data)
     n_clusters = len(np.unique(model.labels_))
-    return model.labels_, n_clusters, model.cluster_selection_epsilon
+    return model.labels_, n_clusters
 
-def calculate_hdbscan(data, eps, min_samples):
+def calculate_hdbscan(data):
     initial_time = time.time()
     best_labels = (0, [0 for _ in data])
     best_score = None
-    best_eps = None
-    best_min_samples = None
     best_n_clusters = None
 
-    for m in min_samples:
-        labels, n_clust, eps = find_hdbscan(data, m)
-        score = calculate_score(data, labels)
-        print(n_clust, score)
-        if not best_score or score > best_score:
-            best_score = score
-            best_eps = eps
-            best_min_samples = m
-            best_n_clusters = n_clust
-            best_labels = labels
+    labels, n_clust = find_hdbscan(data)
+    score = calculate_score(data, labels)
+    if not best_score or score > best_score:
+        best_score = score
+        best_n_clusters = n_clust
+        best_labels = labels
 
     execution_time = time.time() - initial_time
-    return best_labels, best_score, best_eps, best_min_samples, best_n_clusters, execution_time
+    return best_labels, best_score, best_n_clusters, execution_time
 
 def get_nn_max_distance(data):
     # Distances k plus proches voisins
@@ -106,7 +98,7 @@ if __name__ == '__main__':
             varying_min_samples = [2**i for i in range(0, 5)]
             labels, score, best_eps, best_min_samples, n_cluster, execution_time = calculate_dbscan(data, varying_eps, varying_min_samples)
             csv_out.writerow((file.split("/")[-1], "dbscan varying eps and min samples", score, best_eps, best_min_samples, n_cluster, execution_time, varying_eps, varying_min_samples))
-            labels, score, best_eps, best_min_samples, n_cluster, execution_time = calculate_hdbscan(data, varying_eps, varying_min_samples)
-            csv_out.writerow((file.split("/")[-1], "hdbscan varying min samples", score, best_eps, best_min_samples, n_cluster, execution_time, '-', varying_min_samples))
+            labels, score, n_cluster, execution_time = calculate_hdbscan(data)
+            csv_out.writerow((file.split("/")[-1], "hdbscan varying min samples", score, best_eps, '-', '-', execution_time, '-', varying_min_samples))
             plt.scatter(f0, f1, c=labels, s=3)
             plt.show()
